@@ -16,6 +16,7 @@ class Task {
 
   set isCompleted(bool value) {
     _isCompleted = value;
+    if(_isCompleted) _isPending = false;
   }
 
   bool get isPending => _isPending;

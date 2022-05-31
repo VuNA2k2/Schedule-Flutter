@@ -6,7 +6,15 @@ class Application {
   static Application _instance = Application._internal();
   Application._internal();
   static Application get instance => _instance;
-
+  final Map<String, int> _mValueDay = {
+    "Monday" : 1,
+    "Tuesday" : 2,
+    "Wednesday" : 3,
+    "Thursday" : 4,
+    "Friday" : 5,
+    "Saturday" : 6,
+    "Sunday" : 7,
+  };
   final List<Days> _days = [
     Days("Monday"),
     Days("Tuesday"),
@@ -53,4 +61,6 @@ class Application {
 
     await _flutterLocalNotificationsPlugin.show(0, title, body, notificationDetails);
   }
+
+  Map<String, int> get mValueDay => _mValueDay;
 }

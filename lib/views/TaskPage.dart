@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:schedule/controller/Application.dart';
 import 'package:intl/intl.dart';
 import 'package:schedule/models/Days.dart';
@@ -19,7 +20,7 @@ class TasksPage extends StatefulWidget {
 
 class _TasksPage extends State<TasksPage> {
   Days _day;
-
+  final _keyForm = GlobalKey<FormState>();
 
   _TasksPage(this._day);
 
@@ -34,7 +35,7 @@ class _TasksPage extends State<TasksPage> {
       child: Scaffold(
         floatingActionButton: FloatingActionButton(
           onPressed: () {
-            _addTask();
+            _addTask(context);
           },
           child: Icon(Icons.add),
         ),
@@ -120,9 +121,144 @@ class _TasksPage extends State<TasksPage> {
     );
   }
 
-  void _addTask() {
-    setState(() {
-      _day.tasks.add(Task(_day.name, "test", DateTime.now(), "Test", true, false));
-    });
+  Future<Task> _addTask(BuildContext context) async {
+    String stringTaskName = "Task Name";
+    String stringTaskTime = "Time";
+    String stringTaskDes = "Description";
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return Container(
+          padding: EdgeInsets.all(4),
+          margin: EdgeInsets.all(4),
+          height: MediaQuery.of(context).size.height / 2.5,
+          child: Form(
+            key: _keyForm,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                GestureDetector( // Task Name
+                  child: Container(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Icon(Icons.task, size: 32,),
+                        Container(
+                          margin: EdgeInsets.all(8),
+                          child: Text(
+                              style: TextStyle(fontSize: 20),
+                              stringTaskName
+                          ),
+                        ),
+                        Icon(Icons.arrow_forward_ios)
+                      ],
+                    ),
+                  ),
+                  onTap: () {
+                    stringTaskName = showTaskNameDialog(context);
+                    print(stringTaskName);
+                    if(stringTaskName != null) {
+                      setState(() {
+                        
+                      });
+                    }
+                  },
+                ),
+                GestureDetector( // Time
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Icon(Icons.task, size: 32,),
+                      Container(
+                        margin: EdgeInsets.all(8),
+                        child: Text(
+                            style: TextStyle(fontSize: 20),
+                            stringTaskTime
+                        ),
+                      ),
+                      Icon(Icons.arrow_forward_ios)
+                    ],
+                  ),
+                ),
+                GestureDetector( // Description
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Icon(Icons.task, size: 32,),
+                      Container(
+                        margin: EdgeInsets.all(8),
+                        child: Text(
+                            style: TextStyle(fontSize: 20),
+                            stringTaskDes
+                        ),
+                      ),
+                      Icon(Icons.arrow_forward_ios)
+                    ],
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+
+                  },
+                  child: Text("Add"),
+                )
+              ],
+            ),
+          ),
+        );
+      },
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(24),
+        )
+      )
+    );
+    
+    return Task(_day.name, "Test", DateTime.now(), "tes", true, false);
+  }
+
+  void _setAlarm(DateTime selectTime) {
+
+  }
+
+  String showTaskNameDialog(BuildContext context) {
+    var controllerName = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          child: Container(
+            height: MediaQuery.of(context).size.height / 4,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: Column(
+              children: [
+                TextField(
+                  controller: controllerName,
+                  decoration: InputDecoration(
+                    label: Text("Task Name",),
+                    hintText: "Enter Task",
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  child: Text("OK"),
+                )
+              ],
+            )
+          ),
+        );
+      }
+    );
+    return controllerName.text;
   }
 }
+
