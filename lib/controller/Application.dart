@@ -1,10 +1,12 @@
+
 import 'package:schedule/models/Days.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
+
 class Application {
   final FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
-  static Application _instance = Application._internal();
-  Application._internal();
+  static Application _instance = Application._();
+  Application._();
   static Application get instance => _instance;
   final Map<String, int> _mValueDay = {
     "Monday" : 1,
@@ -40,7 +42,7 @@ class Application {
   FlutterLocalNotificationsPlugin get flutterLocalNotificationsPlugin =>
       _flutterLocalNotificationsPlugin;
 
-  void _createNotification(int id, String title, String body) async {
+  void createNotification(int id, String title, String body, DateTime scheduledDate) async {
 
     AndroidNotificationDetails androidNotificationDetails = AndroidNotificationDetails(
       'alarm_notification',
@@ -59,8 +61,10 @@ class Application {
       iOS: iosNotificationDetails,
     );
 
-    await _flutterLocalNotificationsPlugin.show(0, title, body, notificationDetails);
+    await _flutterLocalNotificationsPlugin.schedule(0, title, body, scheduledDate, notificationDetails);
   }
 
   Map<String, int> get mValueDay => _mValueDay;
+
+
 }

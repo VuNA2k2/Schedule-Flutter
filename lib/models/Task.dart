@@ -1,7 +1,7 @@
 class Task {
   String _day;
   String _name;
-  DateTime _time;
+  String _time;
   String? _description;
   bool _isPending;
   bool _isCompleted;
@@ -37,12 +37,9 @@ class Task {
     _name = value;
   }
 
-  DateTime get time => _time;
+  String get time => _time;
 
-  set time(DateTime value) {
-    if(value.isAfter(DateTime.now())) {
-      value.add(Duration(days: 7));
-    }
+  set time(String value) {
     _time = value;
   }
 }

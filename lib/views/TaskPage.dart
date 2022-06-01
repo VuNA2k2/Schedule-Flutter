@@ -4,6 +4,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:schedule/controller/Application.dart';
 import 'package:intl/intl.dart';
 import 'package:schedule/models/Days.dart';
+import 'package:workmanager/workmanager.dart';
 import '../models/Task.dart';
 
 class TasksPage extends StatefulWidget {
@@ -21,7 +22,7 @@ class TasksPage extends StatefulWidget {
 class _TasksPage extends State<TasksPage> {
   Days _day;
   final _keyForm = GlobalKey<FormState>();
-
+  var controllerName = TextEditingController();
   _TasksPage(this._day);
 
   final Application application = Application.instance;
@@ -95,7 +96,7 @@ class _TasksPage extends State<TasksPage> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               mainAxisAlignment: MainAxisAlignment.spaceAround,
                               children: [
-                                Text(DateFormat("HH:mm").format(_day.tasks[index].time), style: const TextStyle(fontSize: 20, color: Colors.white70),),
+                                Text(_day.tasks[index].time, style: const TextStyle(fontSize: 20, color: Colors.white70),),
                                 Text(_day.tasks[index].description, style: const TextStyle(fontSize: 14, color: Colors.white30),maxLines: 2,)
                               ],
                             ),
@@ -121,91 +122,104 @@ class _TasksPage extends State<TasksPage> {
     );
   }
 
-  Future<Task> _addTask(BuildContext context) async {
+  Future<Task?> _addTask(BuildContext context) async {
     String stringTaskName = "Task Name";
-    String stringTaskTime = "Time";
+    String stringTaskTime = DateFormat("HH:mm").format(DateTime.now());
     String stringTaskDes = "Description";
-    showModalBottomSheet(
-      context: context,
+    DateTime selectDateTime = DateTime.now();
+    var controllerName = TextEditingController();
+    var controllerDes = TextEditingController();
+    Duration duration = Duration();
+    showModalBottomSheet<Task?>(
+        context: context,
+        isScrollControlled: true, // only work on showModalBottomSheet function
       builder: (BuildContext context) {
-        return Container(
-          padding: EdgeInsets.all(4),
-          margin: EdgeInsets.all(4),
-          height: MediaQuery.of(context).size.height / 2.5,
-          child: Form(
-            key: _keyForm,
+        return Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+          child: Container(
+            height: 350,
+            margin: EdgeInsets.all(16),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              mainAxisAlignment: MainAxisAlignment.start,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                GestureDetector( // Task Name
-                  child: Container(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Icon(Icons.task, size: 32,),
-                        Container(
-                          margin: EdgeInsets.all(8),
-                          child: Text(
-                              style: TextStyle(fontSize: 20),
-                              stringTaskName
-                          ),
-                        ),
-                        Icon(Icons.arrow_forward_ios)
-                      ],
+                TextField(
+                  decoration: InputDecoration(
+                    label: Text("Name"),
+                    hintText: "Enter Name",
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10)
                     ),
                   ),
-                  onTap: () {
-                    stringTaskName = showTaskNameDialog(context);
-                    print(stringTaskName);
-                    if(stringTaskName != null) {
+                  controller: controllerName,
+                ),
+                SizedBox(height: 20,),
+                GestureDetector( // Time
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        margin: EdgeInsets.all(8),
+                        child: Text(
+                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                            "Time: ${stringTaskTime}"
+                        ),
+                      ),
+                      Icon(Icons.arrow_forward_ios)
+                    ],
+                  ),
+                  onTap: () async {
+                    var selectTime = await showTimePicker(
+                      context: context,
+                      initialTime: TimeOfDay.now(),
+                    );
+                    if(selectTime != null) {
                       setState(() {
-                        
+                        var now = DateTime.now();
+                        selectDateTime = DateTime(
+                          now.year,
+                          now.month,
+                          now.day + (7 - (application.mValueDay[_day.name]! - application.mValueDay[DateFormat("EEEE").format(now)]!)) % 7,
+                          selectTime.hour,
+                          selectTime.minute,
+                        );
+                        if(selectDateTime.isAfter(now)) selectDateTime.add(Duration(days: 7));
+                        duration = selectDateTime.difference(now);
+                        stringTaskTime = DateFormat("HH:mm").format(selectDateTime);
                       });
                     }
                   },
                 ),
-                GestureDetector( // Time
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Icon(Icons.task, size: 32,),
-                      Container(
-                        margin: EdgeInsets.all(8),
-                        child: Text(
-                            style: TextStyle(fontSize: 20),
-                            stringTaskTime
-                        ),
-                      ),
-                      Icon(Icons.arrow_forward_ios)
-                    ],
+                SizedBox(height: 20,),
+                TextField(
+                  decoration: InputDecoration(
+                    label: Text("Description"),
+                    hintText: "Enter Description",
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10)
+                    ),
+                  ),
+                  maxLines: 5,
+                  controller: controllerDes,
+                ),
+                SizedBox(height: 20,),
+                SizedBox(
+                  height: 50,
+                  width: MediaQuery.of(context).size.width / 2,
+                  child: ElevatedButton(
+                    onPressed: () {
+                        stringTaskName = controllerName.text;
+                        stringTaskDes = controllerDes.text;
+                        Navigator.pop(context);
+                        _setAlarm(stringTaskName, stringTaskDes, duration);
+                        setState(() {
+                          _day.tasks.add(Task(_day.name, stringTaskName, stringTaskTime, stringTaskDes, true, false));
+                        });
+                    },
+                    child: Text("Add"),
                   ),
                 ),
-                GestureDetector( // Description
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Icon(Icons.task, size: 32,),
-                      Container(
-                        margin: EdgeInsets.all(8),
-                        child: Text(
-                            style: TextStyle(fontSize: 20),
-                            stringTaskDes
-                        ),
-                      ),
-                      Icon(Icons.arrow_forward_ios)
-                    ],
-                  ),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-
-                  },
-                  child: Text("Add"),
-                )
               ],
             ),
           ),
@@ -217,48 +231,11 @@ class _TasksPage extends State<TasksPage> {
         )
       )
     );
-    
-    return Task(_day.name, "Test", DateTime.now(), "tes", true, false);
   }
 
-  void _setAlarm(DateTime selectTime) {
-
-  }
-
-  String showTaskNameDialog(BuildContext context) {
-    var controllerName = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (context) {
-        return Dialog(
-          child: Container(
-            height: MediaQuery.of(context).size.height / 4,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(24),
-            ),
-            child: Column(
-              children: [
-                TextField(
-                  controller: controllerName,
-                  decoration: InputDecoration(
-                    label: Text("Task Name",),
-                    hintText: "Enter Task",
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                  child: Text("OK"),
-                )
-              ],
-            )
-          ),
-        );
-      }
-    );
-    return controllerName.text;
+  void _setAlarm(String title, String body,Duration duration) {
+    var now = DateTime.now();
+    application.createNotification(0, title, body, now.add(duration));
   }
 }
 
