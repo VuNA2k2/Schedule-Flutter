@@ -1,4 +1,5 @@
 
+import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -6,12 +7,10 @@ import 'package:schedule/controller/Application.dart';
 import 'package:schedule/views/DaysPage.dart';
 import 'package:workmanager/workmanager.dart';
 
-final AudioCache player = AudioCache();
-var soundPath = "sound.mp3";
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
+  await AndroidAlarmManager.initialize();
   AndroidInitializationSettings androidInitializationSettings = AndroidInitializationSettings(
     'ic_launcher'
   );
@@ -42,8 +41,6 @@ void main() async {
     }
   );
 
-  Workmanager().initialize(playMusic);
-
   runApp(
       MyApp()
   );
@@ -61,10 +58,3 @@ class MyApp extends StatelessWidget {
   }
 }
 
-void playMusic(){
-  Workmanager().executeTask((taskName, inputData) async {
-    // play music
-    var result = await player.play(soundPath);
-    return Future.value(true);
-  });
-}

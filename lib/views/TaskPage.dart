@@ -1,11 +1,16 @@
+
+import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:schedule/controller/Application.dart';
 import 'package:intl/intl.dart';
 import 'package:schedule/models/Days.dart';
-import 'package:workmanager/workmanager.dart';
 import '../models/Task.dart';
+
+
+final AudioCache player = AudioCache();
+var soundPath = "sound.mp3";
 
 class TasksPage extends StatefulWidget {
   Days _day;
@@ -233,9 +238,13 @@ class _TasksPage extends State<TasksPage> {
     );
   }
 
-  void _setAlarm(String title, String body,Duration duration) {
+  void _setAlarm(String title, String body,Duration duration) async {
     var now = DateTime.now();
     application.createNotification(0, title, body, now.add(duration));
+    await AndroidAlarmManager.periodic(duration, 0, playMusic);
   }
 }
 
+void playMusic() async {
+  await player.play(soundPath);
+}
