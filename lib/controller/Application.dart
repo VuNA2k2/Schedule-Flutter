@@ -1,4 +1,5 @@
 
+import 'package:schedule/TaskHelper.dart';
 import 'package:schedule/models/Days.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
@@ -27,6 +28,35 @@ class Application {
     Days("Sunday"),
   ];
 
+  Future<void> initializeApplication() async {
+    var _tasks = await TaskHelper().getTasks();
+    _tasks.forEach((element) {
+      switch(element.day) {
+        case "Monday":
+          _days[0].addTask(element);
+          break;
+        case "Tuesday":
+          _days[1].addTask(element);
+          break;
+        case "Wednesday":
+          _days[2].addTask(element);
+          break;
+        case "Thursday":
+          _days[3].addTask(element);
+          break;
+        case "Friday":
+          _days[4].addTask(element);
+          break;
+        case "Saturday":
+          _days[5].addTask(element);
+          break;
+        case "Sunday":
+          _days[6].addTask(element);
+          break;
+      }
+    });
+  }
+
   List<Days> get days => _days;
 
   void addTaskToDay(String day, Task, task) {
@@ -44,16 +74,19 @@ class Application {
 
   void createNotification(int id, String title, String body, DateTime scheduledDate) async {
 
-    AndroidNotificationDetails androidNotificationDetails = AndroidNotificationDetails(
-      'alarm_notification',
+    AndroidNotificationDetails androidNotificationDetails = const AndroidNotificationDetails(
+      'channel Id 0',
       'alarm_notification',
       icon: 'ic_launcher',
+      sound: RawResourceAndroidNotificationSound('sound'),
+      playSound: true,
     );
 
     IOSNotificationDetails iosNotificationDetails = IOSNotificationDetails(
       presentAlert: true,
       presentBadge: true,
       presentSound: true,
+      sound: 'sound.mp3'
     );
 
     NotificationDetails notificationDetails = NotificationDetails(
@@ -66,5 +99,8 @@ class Application {
 
   Map<String, int> get mValueDay => _mValueDay;
 
+  void cancelNotification(int id) async {
+    await _flutterLocalNotificationsPlugin.cancel(id);
+  }
 
 }

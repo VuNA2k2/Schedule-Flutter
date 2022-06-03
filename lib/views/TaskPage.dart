@@ -3,9 +3,11 @@ import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:schedule/TaskHelper.dart';
 import 'package:schedule/controller/Application.dart';
 import 'package:intl/intl.dart';
 import 'package:schedule/models/Days.dart';
+import '../config/event.dart';
 import '../models/Task.dart';
 
 
@@ -41,7 +43,7 @@ class _TasksPage extends State<TasksPage> {
       child: Scaffold(
         floatingActionButton: FloatingActionButton(
           onPressed: () {
-            _addTask(context);
+            showModal(context, Event.ADD, null);
           },
           child: Icon(Icons.add),
         ),
@@ -60,63 +62,85 @@ class _TasksPage extends State<TasksPage> {
             child: ListView.builder(
                 itemCount: _day.tasks.length,
                 itemBuilder: (context, index) {
-                  return Container(
-                    alignment: Alignment.topLeft,
-                    padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-                    margin: const EdgeInsets.fromLTRB(8, 8, 8, 8),
-                    decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Colors.purple, Colors.red],
-                        ),
-                        borderRadius: const BorderRadius.all(Radius.circular(10)),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.red.withOpacity(0.5),
-                            blurRadius: 12,
-                            offset: Offset(1,1),
-                          )
-                        ]
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(_day.tasks[index].name, style: const TextStyle(fontSize: 32, color: Colors.white, fontWeight: FontWeight.bold),),
-                            IconButton(
-                              onPressed: () async {
-                                // edit button
-                              },
-                              icon: const Icon(Icons.edit, color: Colors.white,),
+                  return Dismissible(
+                    onDismissed: (direction) async {
+                      var result = await TaskHelper().delete(_day.tasks[index].id);
+                      application.cancelNotification(_day.tasks[index].id);
+                      _day.tasks.removeAt(index);
+                    },
+                    key: Key(_day.tasks[index].id.toString()),
+                    child: Container(
+                      alignment: Alignment.topLeft,
+                      padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+                      margin: const EdgeInsets.fromLTRB(8, 8, 8, 8),
+                      decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Colors.purple, Colors.red],
+                          ),
+                          borderRadius: const BorderRadius.all(Radius.circular(10)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.red.withOpacity(0.5),
+                              blurRadius: 12,
+                              offset: Offset(1,1),
                             )
-                          ],
-                        ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisAlignment: MainAxisAlignment.spaceAround,
-                              children: [
-                                Text(_day.tasks[index].time, style: const TextStyle(fontSize: 20, color: Colors.white70),),
-                                Text(_day.tasks[index].description, style: const TextStyle(fontSize: 14, color: Colors.white30),maxLines: 2,)
-                              ],
-                            ),
-                            Switch(
-                              value: _day.tasks[index].isPending,
-                              onChanged: (value) {
-                                setState(() {
-                                  _day.tasks[index].isPending = value;
-                                });
-                              },
-                              activeColor: Colors.white30,
-                            )
-                          ],
-                        ),
-                      ],
+                          ]
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(_day.tasks[index].name, style: const TextStyle(fontSize: 32, color: Colors.white, fontWeight: FontWeight.bold),),
+                              IconButton(
+                                onPressed: () {
+                                  setState(() {
+                                    showModal(context, Event.EDIT, _day.tasks[index]);
+                                  });
+                                },
+                                icon: const Icon(Icons.edit, color: Colors.white,),
+                              )
+                            ],
+                          ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                children: [
+                                  Text(_day.tasks[index].time, style: const TextStyle(fontSize: 20, color: Colors.white70),),
+                                  Text(_day.tasks[index].description, style: const TextStyle(fontSize: 14, color: Colors.white30),maxLines: 2,)
+                                ],
+                              ),
+                              Switch(
+                                value: _day.tasks[index].isPending == 1 ? true : false,
+                                onChanged: (value) {
+                                  setState(() {
+                                    if(!value) {
+                                      application.cancelNotification(_day.tasks[index].id);
+                                    } else if(value && _day.tasks[index].isPending == 0) {
+                                      var now = DateTime.now();
+                                      application.createNotification(_day.tasks[index].id, _day.tasks[index].name, _day.tasks[index].description, DateTime(
+                                        now.year,
+                                        now.month,
+                                        now.day + (7 - (application.mValueDay[_day.name]! - application.mValueDay[DateFormat("EEEE").format(now)]!)) % 7,
+                                        int.parse(_day.tasks[index].time.split(":")[0]),
+                                        int.parse(_day.tasks[index].time.split(":")[1])
+                                      ));
+                                    }
+                                    value ? _day.tasks[index].isPending = 1 : _day.tasks[index].isPending = 0;
+                                  });
+                                },
+                                activeColor: Colors.white30,
+                              )
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   );
                 }
@@ -127,38 +151,51 @@ class _TasksPage extends State<TasksPage> {
     );
   }
 
-  Future<Task?> _addTask(BuildContext context) async {
-    String stringTaskName = "Task Name";
-    String stringTaskTime = DateFormat("HH:mm").format(DateTime.now());
-    String stringTaskDes = "Description";
-    DateTime selectDateTime = DateTime.now();
+  void showModal(BuildContext context, Event event, Task? task) async {
+    String stringTaskName =  event == Event.ADD ? "Task Name" : task!.name;
+    String stringTaskTime = event == Event.ADD ? DateFormat("HH:mm").format(DateTime.now()) : task!.time;
+    String stringTaskDes = event == Event.ADD ? "Description" : task!.description;
+    var now = DateTime.now();
+    DateTime selectDateTime = event == Event.ADD ? DateTime.now() : DateTime(
+      now.year,
+      now.month,
+      now.day + (7 - (application.mValueDay[task!.day]! - application.mValueDay[DateFormat("EEEE").format(now)]!)) % 7,
+      int.parse(task.time.split(":")[0]),
+      int.parse(task.time.split(":")[1])
+    );
     var controllerName = TextEditingController();
     var controllerDes = TextEditingController();
-    Duration duration = Duration();
-    showModalBottomSheet<Task?>(
+    if(event == Event.EDIT) {
+      controllerName.text = stringTaskName;
+      controllerDes.text = stringTaskDes;
+    }
+    Duration duration = event == Event.ADD ? Duration(days: (7 - (application.mValueDay[_day.name]! - application.mValueDay[DateFormat("EEEE").format(DateTime.now())]!)) % 7) : 
+                                              selectDateTime.difference(DateTime.now());
+    showModalBottomSheet(
         context: context,
         isScrollControlled: true, // only work on showModalBottomSheet function
       builder: (BuildContext context) {
         return Padding(
           padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
           child: Container(
-            height: 350,
-            margin: EdgeInsets.all(16),
+            height: 400,
+            margin: const EdgeInsets.all(16),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.start,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 TextField(
                   decoration: InputDecoration(
-                    label: Text("Name"),
+                    label: const Text("Name"),
                     hintText: "Enter Name",
                     border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10)
                     ),
                   ),
                   controller: controllerName,
+                  autofocus: true,
                 ),
-                SizedBox(height: 20,),
+                const SizedBox(height: 20,),
                 GestureDetector( // Time
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -167,17 +204,17 @@ class _TasksPage extends State<TasksPage> {
                       Container(
                         margin: EdgeInsets.all(8),
                         child: Text(
-                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                            "Time: ${stringTaskTime}"
+                            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                            'Time: ${stringTaskTime}'
                         ),
                       ),
-                      Icon(Icons.arrow_forward_ios)
+                      const Icon(Icons.arrow_forward_ios)
                     ],
                   ),
                   onTap: () async {
                     var selectTime = await showTimePicker(
                       context: context,
-                      initialTime: TimeOfDay.now(),
+                      initialTime: TimeOfDay(hour: selectDateTime.hour, minute: selectDateTime.minute),
                     );
                     if(selectTime != null) {
                       setState(() {
@@ -189,17 +226,20 @@ class _TasksPage extends State<TasksPage> {
                           selectTime.hour,
                           selectTime.minute,
                         );
-                        if(selectDateTime.isAfter(now)) selectDateTime.add(Duration(days: 7));
-                        duration = selectDateTime.difference(now);
+                        if(selectDateTime.isAfter(DateTime.now())) {
+                          duration = selectDateTime.difference(now);
+                        } else {
+                          duration = selectDateTime.add(const Duration(days: 7)).difference(now);
+                        }
                         stringTaskTime = DateFormat("HH:mm").format(selectDateTime);
                       });
                     }
                   },
                 ),
-                SizedBox(height: 20,),
+                const SizedBox(height: 20,),
                 TextField(
                   decoration: InputDecoration(
-                    label: Text("Description"),
+                    label: const Text("Description"),
                     hintText: "Enter Description",
                     border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10)
@@ -208,21 +248,43 @@ class _TasksPage extends State<TasksPage> {
                   maxLines: 5,
                   controller: controllerDes,
                 ),
-                SizedBox(height: 20,),
+                const SizedBox(height: 20,),
                 SizedBox(
                   height: 50,
                   width: MediaQuery.of(context).size.width / 2,
                   child: ElevatedButton(
-                    onPressed: () {
+                    onPressed: () async {
                         stringTaskName = controllerName.text;
                         stringTaskDes = controllerDes.text;
+                        Task mtask = Task(
+                          day: _day.name,
+                          name: stringTaskName,
+                          time: stringTaskTime,
+                          description:  stringTaskDes,
+                          isPending:  1,
+                          isComplete:  0,
+                        );
+                        var id;
+                        if(event == Event.ADD) {
+                          TaskHelper().insertTask(mtask);
+                          id = await TaskHelper().getLastInsertId();
+                          setState(() {
+                            mtask.id = id;
+                            _day.tasks.add(mtask);
+                          });
+                        } else {
+                          id = task!.id;
+                          setState(() {
+                            task.name = stringTaskName;
+                            task.description = stringTaskDes;
+                            task.time = stringTaskTime;
+                            TaskHelper().update(task);
+                          });
+                        }
+                        _setAlarm(id, stringTaskName, stringTaskDes, duration);
                         Navigator.pop(context);
-                        _setAlarm(stringTaskName, stringTaskDes, duration);
-                        setState(() {
-                          _day.tasks.add(Task(_day.name, stringTaskName, stringTaskTime, stringTaskDes, true, false));
-                        });
                     },
-                    child: Text("Add"),
+                    child: event == Event.ADD ? Text("Add") : Text("Save"),
                   ),
                 ),
               ],
@@ -238,10 +300,9 @@ class _TasksPage extends State<TasksPage> {
     );
   }
 
-  void _setAlarm(String title, String body,Duration duration) async {
+  void _setAlarm(int id, String title, String body,Duration duration) async {
     var now = DateTime.now();
-    application.createNotification(0, title, body, now.add(duration));
-    await AndroidAlarmManager.periodic(duration, 0, playMusic);
+    application.createNotification(id, title, body, now.add(duration));
   }
 }
 

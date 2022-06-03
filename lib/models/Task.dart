@@ -1,27 +1,44 @@
+import 'package:flutter/foundation.dart';
+
 class Task {
-  String _day;
-  String _name;
-  String _time;
+  int? _id;
+  String? _day;
+  String? _name;
+  String? _time;
   String? _description;
-  bool _isPending;
-  bool _isCompleted;
+  int? _isPending;
+  int? _isCompleted;
 
-
-  Task(this._day, this._name, this._time, this._description, this._isPending,
-      this._isCompleted);
-
-  String get day => _day;
-
-  bool get isCompleted => _isCompleted;
-
-  set isCompleted(bool value) {
-    _isCompleted = value;
-    if(_isCompleted) _isPending = false;
+  Task({
+    int? id,
+    required String day,
+    required String name,
+    required String time,
+    String? description,
+    required int isPending,
+    required int isComplete,
+  }) {
+    this._id = id;
+    this._day = day;
+    this._name = name;
+    this._time = time;
+    this._description = description;
+    this._isPending = isPending;
+    this._isCompleted = isComplete;
   }
 
-  bool get isPending => _isPending;
+  String get day => _day!;
 
-  set isPending(bool value) {
+  int get isCompleted => _isCompleted!;
+
+  set isCompleted(int value) {
+    _isCompleted = value;
+    if(_isCompleted == 1) _isPending = 0;
+  }
+
+  int get isPending => _isPending!;
+
+  set isPending(int value) {
     _isPending = value;
   }
 
@@ -31,15 +48,41 @@ class Task {
     _description = value;
   }
 
-  String get name => _name;
+  String get name => _name!;
 
   set name(String value) {
     _name = value;
   }
 
-  String get time => _time;
+  String get time => _time!;
 
   set time(String value) {
     _time = value;
+  }
+
+  factory Task.fromMap(Map<String, dynamic> json) => Task(
+    id: json["id"],
+    day: json["day"],
+    name: json["name"],
+    time: json["time"],
+    description: json["description"],
+    isPending: json["isPending"],
+    isComplete: json["isDone"]
+  );
+
+  Map<String, dynamic> toMap() => {
+    "id": _id,
+    "day": _day,
+    "name": _name,
+    "time": _time,
+    "description": _description,
+    "isPending": _isPending,
+    "isDone": _isCompleted,
+  };
+
+  int get id => _id!;
+
+  set id(int value) {
+    _id = value;
   }
 }

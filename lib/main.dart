@@ -10,7 +10,6 @@ import 'package:workmanager/workmanager.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await AndroidAlarmManager.initialize();
   AndroidInitializationSettings androidInitializationSettings = AndroidInitializationSettings(
     'ic_launcher'
   );
@@ -40,6 +39,8 @@ void main() async {
       }
     }
   );
+
+  await Application.instance.initializeApplication();
 
   runApp(
       MyApp()
