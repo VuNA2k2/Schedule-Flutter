@@ -1,9 +1,8 @@
 
-import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:schedule/TaskHelper.dart';
+import 'package:flutter/rendering.dart';
 import 'package:schedule/controller/Application.dart';
 import 'package:intl/intl.dart';
 import 'package:schedule/models/Days.dart';
@@ -31,7 +30,7 @@ class _TasksPage extends State<TasksPage> {
   final _keyForm = GlobalKey<FormState>();
   var controllerName = TextEditingController();
   _TasksPage(this._day);
-
+  bool isFabVisible = true;
   final Application application = Application.instance;
   @override
   Widget build(BuildContext context) {
@@ -41,100 +40,118 @@ class _TasksPage extends State<TasksPage> {
         return false;
       },
       child: Scaffold(
-        floatingActionButton: FloatingActionButton(
-          onPressed: () {
-            showModal(context, Event.ADD, null);
-          },
-          child: Icon(Icons.add),
+        floatingActionButton: Visibility(
+          visible: isFabVisible,
+          child: FloatingActionButton(
+            onPressed: () {
+              showModal(context, Event.ADD, null);
+            },
+            child: Icon(Icons.add),
+          ),
         ),
-        appBar: AppBar(
-          title: Text(
-            _day.name,
-            style: const TextStyle(fontSize: 30, color: Colors.white, fontWeight: FontWeight.bold),),
-          elevation: 0,
-          backgroundColor: const Color(0xFF2D2F41),
-          leading: const Icon(Icons.menu),
-        ),
-        body: Container(
-          alignment: Alignment.center,
-          color: const Color(0xFF2D2F41),
-          child: NotificationListener<UserScrollNotification> (
-            child: ListView.builder(
-                itemCount: _day.tasks.length,
-                itemBuilder: (context, index) {
-                  return Dismissible(
-                    onDismissed: (direction) async {
-                      var result = await TaskHelper().delete(_day.tasks[index].id);
-                      application.cancelNotification(_day.tasks[index].id);
-                      _day.tasks.removeAt(index);
-                    },
-                    key: Key(_day.tasks[index].id.toString()),
-                    child: Container(
-                      alignment: Alignment.topLeft,
-                      padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-                      margin: const EdgeInsets.fromLTRB(8, 8, 8, 8),
-                      decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Colors.purple, Colors.red],
-                          ),
-                          borderRadius: const BorderRadius.all(Radius.circular(10)),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.red.withOpacity(0.5),
-                              blurRadius: 12,
-                              offset: Offset(1,1),
-                            )
-                          ]
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(_day.tasks[index].name, style: const TextStyle(fontSize: 32, color: Colors.white, fontWeight: FontWeight.bold),),
-                              IconButton(
-                                onPressed: () {
-                                  setState(() {
-                                    showModal(context, Event.EDIT, _day.tasks[index]);
-                                  });
-                                },
-                                icon: const Icon(Icons.edit, color: Colors.white,),
+        backgroundColor: const Color(0xFF2D2F41),
+        body: NestedScrollView(
+          floatHeaderSlivers: true,
+          headerSliverBuilder: (context, innerBoxIsScrolled) => [
+            SliverAppBar(
+              title: Text(
+                _day.name,
+                style: const TextStyle(fontSize: 30, color: Colors.white, fontWeight: FontWeight.bold),
+              ),
+              backgroundColor: const Color(0xFF2D2F41),
+            )
+          ],
+          body: NotificationListener<UserScrollNotification> (
+            onNotification: (notification) {
+              if(notification.direction == ScrollDirection.forward) {
+                setState(() {
+                  if(!isFabVisible) isFabVisible = true;
+                });
+              } else if(notification.direction == ScrollDirection.reverse) {
+                setState(() {
+                  if(isFabVisible) isFabVisible = false;
+                });
+              }
+              return true;
+            },
+              child: ListView.builder(
+                padding: EdgeInsets.zero,
+                  itemCount: _day.tasks.length,
+                  itemBuilder: (context, index) {
+                    return Dismissible(
+                      key: Key(_day.tasks[index].id.toString()),
+                      onDismissed: (direction) async {
+                        application.deleteTask(_day.tasks[index].id);
+                        setState(() {
+                          _day.tasks.removeAt(index);
+                        });
+                      },
+                      child: Container(
+                        alignment: Alignment.topLeft,
+                        padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+                        margin: const EdgeInsets.fromLTRB(8, 8, 8, 8),
+                        decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Colors.purple, Colors.red],
+                            ),
+                            borderRadius: const BorderRadius.all(Radius.circular(10)),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.red.withOpacity(0.5),
+                                blurRadius: 12,
+                                offset: Offset(1,1),
                               )
-                            ],
-                          ),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                                children: [
-                                  Text(_day.tasks[index].time, style: const TextStyle(fontSize: 20, color: Colors.white70),),
-                                  Text(_day.tasks[index].description, style: const TextStyle(fontSize: 14, color: Colors.white30),maxLines: 2,)
-                                ],
-                              ),
-                              Switch(
-                                value: _day.tasks[index].isPending == 1 ? true : false,
-                                onChanged: (value) {
-                                  setState(() {
-                                    if(!value) {
-                                      application.cancelNotification(_day.tasks[index].id);
-                                    } else if(value && _day.tasks[index].isPending == 0) {
-                                      var now = DateTime.now();
-                                      application.createNotification(_day.tasks[index].id, _day.tasks[index].name, _day.tasks[index].description, DateTime(
-                                        now.year,
-                                        now.month,
-                                        now.day + (7 - (application.mValueDay[_day.name]! - application.mValueDay[DateFormat("EEEE").format(now)]!)) % 7,
-                                        int.parse(_day.tasks[index].time.split(":")[0]),
-                                        int.parse(_day.tasks[index].time.split(":")[1])
-                                      ));
-                                    }
-                                    value ? _day.tasks[index].isPending = 1 : _day.tasks[index].isPending = 0;
-                                  });
-                                },
+                            ]
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(_day.tasks[index].name, style: const TextStyle(fontSize: 32, color: Colors.white, fontWeight: FontWeight.bold),),
+                                IconButton(
+                                  onPressed: () {
+                                    setState(() {
+                                      showModal(context, Event.EDIT, _day.tasks[index]);
+                                    });
+                                  },
+                                  icon: const Icon(Icons.edit, color: Colors.white,),
+                                )
+                              ],
+                            ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                  children: [
+                                    Text(_day.tasks[index].time, style: const TextStyle(fontSize: 20, color: Colors.white70),),
+                                    Text(_day.tasks[index].description, style: const TextStyle(fontSize: 14, color: Colors.white30),maxLines: 2,)
+                                  ],
+                                ),
+                                Switch(
+                                  value: _day.tasks[index].isPending == 1 ? true : false,
+                                  onChanged: (value) {
+                                    setState(() {
+                                      if(!value) {
+                                        application.cancelNotification(_day.tasks[index].id);
+                                      } else if(value && _day.tasks[index].isPending == 0) {
+                                        var now = DateTime.now();
+                                        application.createNotification(_day.tasks[index].id, _day.tasks[index].name, _day.tasks[index].description, DateTime(
+                                            now.year,
+                                            now.month,
+                                            now.day + (7 - (application.mValueDay[_day.name]! - application.mValueDay[DateFormat("EEEE").format(now)]!)) % 7,
+                                            int.parse(_day.tasks[index].time.split(":")[0]),
+                                            int.parse(_day.tasks[index].time.split(":")[1])
+                                        ));
+                                      }
+                                      value ? _day.tasks[index].isPending = 1 : _day.tasks[index].isPending = 0;
+                                    });
+                                  },
                                 activeColor: Colors.white30,
                               )
                             ],
@@ -144,10 +161,10 @@ class _TasksPage extends State<TasksPage> {
                     ),
                   );
                 }
+              ),
             ),
           ),
         ),
-      ),
     );
   }
 
@@ -266,8 +283,8 @@ class _TasksPage extends State<TasksPage> {
                         );
                         var id;
                         if(event == Event.ADD) {
-                          TaskHelper().insertTask(mtask);
-                          id = await TaskHelper().getLastInsertId();
+                          application.insertTask(mtask);
+                          id = await application.getLastId();
                           setState(() {
                             mtask.id = id;
                             _day.tasks.add(mtask);
@@ -278,10 +295,10 @@ class _TasksPage extends State<TasksPage> {
                             task.name = stringTaskName;
                             task.description = stringTaskDes;
                             task.time = stringTaskTime;
-                            TaskHelper().update(task);
+                            application.updateTask(task);
                           });
                         }
-                        _setAlarm(id, stringTaskName, stringTaskDes, duration);
+                        application.setAlarm(id, stringTaskName, stringTaskDes, duration);
                         Navigator.pop(context);
                     },
                     child: event == Event.ADD ? Text("Add") : Text("Save"),
@@ -299,13 +316,4 @@ class _TasksPage extends State<TasksPage> {
       )
     );
   }
-
-  void _setAlarm(int id, String title, String body,Duration duration) async {
-    var now = DateTime.now();
-    application.createNotification(id, title, body, now.add(duration));
-  }
-}
-
-void playMusic() async {
-  await player.play(soundPath);
 }

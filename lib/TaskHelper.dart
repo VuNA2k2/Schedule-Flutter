@@ -59,7 +59,7 @@ class TaskHelper {
     return database;
   }
   
-  void insertTask(Task task) async {
+  void insert(Task task) async {
     var db = await this.database;
     var result = await db.insert(tableName, task.toMap());
   }

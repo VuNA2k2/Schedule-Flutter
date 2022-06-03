@@ -3,6 +3,8 @@ import 'package:schedule/TaskHelper.dart';
 import 'package:schedule/models/Days.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
+import '../models/Task.dart';
+
 
 class Application {
   final FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
@@ -103,4 +105,25 @@ class Application {
     await _flutterLocalNotificationsPlugin.cancel(id);
   }
 
+  void setAlarm(int id, String title, String body,Duration duration) async {
+    var now = DateTime.now();
+    createNotification(id, title, body, now.add(duration));
+  }
+
+  void deleteTask(int id) async {
+    var result = await TaskHelper().delete(id);
+    cancelNotification(id);
+  }
+
+  void insertTask(Task task) async {
+    TaskHelper().insert(task);
+  }
+
+  Future<int> getLastId() async {
+    return TaskHelper().getLastInsertId();
+  }
+
+  void updateTask(Task task) async {
+    TaskHelper().update(task);
+  }
 }
